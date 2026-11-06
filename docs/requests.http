@@ -1,0 +1,44 @@
+### Mesure valide : 202
+POST http://localhost:8081/api/measurements
+Content-Type: application/json
+
+{"sensorId":"SENSOR-001","timestamp":"2026-11-06T08:15:00Z","powerKw":3.72,"voltage":226.4,"temperature":29.1}
+
+### Mesure sans sensorId : 400
+POST http://localhost:8081/api/measurements
+Content-Type: application/json
+
+{"timestamp":"2026-11-06T08:15:00Z","powerKw":3.72,"voltage":226.4}
+
+### Puissance négative : 400
+POST http://localhost:8081/api/measurements
+Content-Type: application/json
+
+{"sensorId":"SENSOR-001","timestamp":"2026-11-06T08:15:00Z","powerKw":-1,"voltage":226.4}
+
+### Créer un capteur : 201
+POST http://localhost:8083/api/sensors
+Content-Type: application/json
+
+{"sensorId":"SENSOR-006","name":"Compteur cafétéria","building":"Bâtiment A","floor":1,"maxPowerKw":6.0,"active":true,"tags":["office"]}
+
+### Lister les capteurs
+GET http://localhost:8083/api/sensors
+
+### Résumé quotidien (MongoDB)
+GET http://localhost:8083/api/sensors/SENSOR-003/daily-summary
+
+### Historique (Cassandra)
+GET http://localhost:8083/api/measurements/SENSOR-003?from=2026-11-06T00:00:00Z&to=2026-11-06T23:59:59Z
+
+### Dernière mesure (cache Redis)
+GET http://localhost:8083/api/measurements/SENSOR-003/latest
+
+### Indicateurs
+GET http://localhost:8083/api/analytics/SENSOR-003/summary
+
+### Anomalies
+GET http://localhost:8083/api/analytics/SENSOR-003/anomalies
+
+### Prévision
+GET http://localhost:8083/api/analytics/SENSOR-003/forecast?horizonMinutes=60

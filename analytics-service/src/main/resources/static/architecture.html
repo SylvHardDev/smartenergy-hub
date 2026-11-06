@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Architecture SmartEnergy Hub</title>
+<style>
+  body { margin:0; background:#0f1720; color:#e6edf3; font:15px/1.45 system-ui,"Segoe UI",sans-serif; }
+  main { max-width:1200px; margin:0 auto; padding:24px; }
+  h1 { font-size:24px; margin:0 0 4px; }
+  p { color:#8fa1b3; margin:0 0 20px; }
+  svg { width:100%; height:auto; display:block; }
+  .box { fill:#17212c; stroke:#2a3847; stroke-width:1.5; }
+  .svc { stroke:#4cc38a; }
+  .db { stroke:#58a6ff; }
+  .t { fill:#e6edf3; font-size:16px; font-weight:600; text-anchor:middle; }
+  .s { fill:#8fa1b3; font-size:13px; text-anchor:middle; }
+  .l { fill:#8fa1b3; font-size:12px; text-anchor:middle; }
+  .a { stroke:#8fa1b3; stroke-width:1.6; fill:none; marker-end:url(#arrow); }
+</style>
+</head>
+<body>
+<main>
+  <h1>SmartEnergy Hub : architecture</h1>
+  <p>Écriture asynchrone en haut, lecture synchrone en bas. Chaque base répond à un besoin différent.</p>
+  <svg viewBox="0 0 1150 500" role="img" aria-label="Schéma de la chaîne de traitement">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0L10 5L0 10z" fill="#8fa1b3"/>
+      </marker>
+    </defs>
+
+    <rect class="box" x="10" y="50" width="170" height="90" rx="8"/>
+    <text class="t" x="95" y="88">Simulateur</text>
+    <text class="s" x="95" y="112">5 capteurs, Python</text>
+
+    <rect class="box svc" x="250" y="50" width="190" height="90" rx="8"/>
+    <text class="t" x="345" y="88">Collector Service</text>
+    <text class="s" x="345" y="112">valide, répond 202</text>
+
+    <rect class="box db" x="510" y="50" width="190" height="90" rx="8"/>
+    <text class="t" x="605" y="88">Redis Streams</text>
+    <text class="s" x="605" y="112">tampon + storage-group</text>
+
+    <rect class="box svc" x="770" y="50" width="190" height="90" rx="8"/>
+    <text class="t" x="865" y="88">Storage Service</text>
+    <text class="s" x="865" y="112">persiste, puis XACK</text>
+
+    <rect class="box db" x="770" y="220" width="190" height="90" rx="8"/>
+    <text class="t" x="865" y="258">Cassandra</text>
+    <text class="s" x="865" y="282">séries temporelles</text>
+
+    <rect class="box db" x="510" y="220" width="190" height="90" rx="8"/>
+    <text class="t" x="605" y="258">MongoDB</text>
+    <text class="s" x="605" y="282">capteurs, agrégats</text>
+
+    <rect class="box db" x="250" y="220" width="190" height="90" rx="8"/>
+    <text class="t" x="345" y="258">Redis (cache)</text>
+    <text class="s" x="345" y="282">dernière mesure</text>
+
+    <rect class="box svc" x="430" y="390" width="350" height="90" rx="8"/>
+    <text class="t" x="605" y="428">Analytics Service</text>
+    <text class="s" x="605" y="452">API, indicateurs, anomalies, prévision</text>
+
+    <rect class="box" x="10" y="390" width="280" height="90" rx="8"/>
+    <text class="t" x="150" y="428">Tableau de bord, Swagger</text>
+    <text class="s" x="150" y="452">utilisateur</text>
+
+    <path class="a" d="M180 95H248"/>
+    <text class="l" x="214" y="84">POST</text>
+    <path class="a" d="M440 95H508"/>
+    <text class="l" x="474" y="84">XADD</text>
+    <path class="a" d="M700 95H768"/>
+    <text class="l" x="734" y="84">XREADGROUP</text>
+    <path class="a" d="M865 140V218"/>
+    <path class="a" d="M800 140V180H640V218"/>
+    <path class="a" d="M780 140V165H345V218"/>
+    <path class="a" d="M865 310V435H782"/>
+    <path class="a" d="M605 310V388"/>
+    <path class="a" d="M345 310V360H520V388"/>
+    <path class="a" d="M430 435H292"/>
+    <text class="l" x="360" y="424">REST</text>
+  </svg>
+</main>
+</body>
+</html>

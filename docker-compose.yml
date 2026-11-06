@@ -1,0 +1,126 @@
+# Lancement : docker compose up -d --build
+x-java-env: &java-env
+  JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m"
+
+services:
+  redis:
+    image: redis:7
+    # AOF : le flux survit à un redémarrage de Redis (aucune mesure en transit perdue).
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?copier .env.example en .env}"]
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mongo:
+    image: mongo:7
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:?copier .env.example en .env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?copier .env.example en .env}
+    volumes:
+      - mongo_data:/data/db
+      - ./scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  cassandra:
+    image: cassandra:5
+    environment:
+      MAX_HEAP_SIZE: 768M
+      HEAP_NEWSIZE: 128M
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'DESCRIBE KEYSPACES' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 30s
+
+  cassandra-init:
+    image: cassandra:5
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    volumes:
+      - ./scripts/init-cassandra.cql:/init.cql:ro
+    entrypoint: ["cqlsh", "cassandra", "-f", "/init.cql"]
+    restart: "no"
+
+  collector-service:
+    build: ./collector-service
+    ports:
+      - "8081:8080"
+    environment:
+      <<: *java-env
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  storage-service:
+    build: ./storage-service
+    ports:
+      - "8082:8080"
+    environment:
+      <<: *java-env
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      CASSANDRA_CONTACT_POINTS: cassandra:9042
+      MONGO_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/smartenergy?authSource=admin
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      cassandra-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  analytics-service:
+    build: ./analytics-service
+    ports:
+      - "8083:8080"
+    environment:
+      <<: *java-env
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      CASSANDRA_CONTACT_POINTS: cassandra:9042
+      MONGO_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/smartenergy?authSource=admin
+      FORECAST_PERIOD_SECONDS: 3600
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      cassandra-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # docker compose --profile sim up -d --build simulator
+  simulator:
+    build: ./simulator
+    profiles: ["sim"]
+    environment:
+      COLLECTOR_URL: http://collector-service:8080/api/measurements
+      BACKFILL_HOURS: ${BACKFILL_HOURS:-0}
+    depends_on:
+      - collector-service
+    restart: unless-stopped
+
+# Les ports des bases ne sont volontairement pas publiés sur l'hôte :
+# on y accède avec "docker compose exec".
+volumes:
+  redis_data:
+  mongo_data:
+  cassandra_data:

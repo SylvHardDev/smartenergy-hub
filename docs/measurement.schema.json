@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EnergyMeasurement",
+  "type": "object",
+  "required": ["sensorId", "timestamp", "powerKw", "voltage"],
+  "additionalProperties": true,
+  "properties": {
+    "sensorId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$", "examples": ["SENSOR-001"] },
+    "timestamp": { "type": "string", "format": "date-time", "description": "UTC, ISO-8601. Refusé si plus de 7 jours dans le passé ou plus de 5 minutes dans le futur." },
+    "powerKw": { "type": "number", "minimum": 0 },
+    "voltage": { "type": "number", "minimum": 80, "maximum": 480 },
+    "temperature": { "type": "number", "minimum": -50, "maximum": 100 }
+  }
+}

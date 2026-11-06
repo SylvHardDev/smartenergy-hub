@@ -1,0 +1,28 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: collector-service
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+      password: ${REDIS_PASSWORD:}
+      timeout: 2s
+      repositories:
+        enabled: false
+smartenergy:
+  stream: energy-measurements
+  max-age-days: 7
+  max-future-minutes: 5
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

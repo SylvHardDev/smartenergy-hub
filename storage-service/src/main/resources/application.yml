@@ -1,0 +1,44 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: storage-service
+  cassandra:
+    contact-points: ${CASSANDRA_CONTACT_POINTS:localhost:9042}
+    local-datacenter: datacenter1
+    keyspace-name: smartenergy
+    schema-action: none
+    request:
+      timeout: 10s
+    connection:
+      connect-timeout: 10s
+      init-query-timeout: 10s
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+      password: ${REDIS_PASSWORD:}
+      timeout: 5s
+      repositories:
+        enabled: false
+    mongodb:
+      uri: ${MONGO_URI:mongodb://localhost:27017/smartenergy}
+smartenergy:
+  stream: energy-measurements
+  dead-letter-stream: energy-measurements-dlq
+  group: storage-group
+  consumer: ${CONSUMER_NAME:storage-1}
+  batch-size: 100
+  pending-retry-seconds: 15
+  aggregate-interval-ms: 10000
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
